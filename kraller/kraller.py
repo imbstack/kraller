@@ -48,7 +48,7 @@ def requires_auth(f):
 
 
 def in_blacklist(name):
-    return name in set(map(lambda x: x.strip(), open(app.config['BLACKLIST_FILE']).readlines()))
+    return name in map(lambda x: x.strip(), open(app.config['BLACKLIST_FILE']).readlines())
 
 
 @app.route('/login')
@@ -73,10 +73,7 @@ def login():
 
 @app.route('/logout')
 def logout():
-    try:
-        session.pop('username')
-    except:
-        pass
+    session.pop('username', None)
     return redirect('/')
 
 
@@ -87,7 +84,7 @@ def index():
 
 class SignupForm(Form):
     name = TextField('Full Name', [Required()])
-    phone = TextField('Phone Number', [Required()])
+    phone = TextField('Phone Number (optional)', [])
     ssh_key = TextAreaField('SSH Key', [Required()])
     accept_tos = BooleanField(None, [Required()])
 
@@ -127,12 +124,15 @@ def signup():
         ]):
             if in_blacklist(username):
                 flash('You are blacklisted.')
+                return render_template('signup.tmpl', form=form)
 
             if create_user(username, name, '', '', phone):
                 flash('There was an error creating that user.')
+                return render_template('signup.tmpl', form=form)
 
             if add_ssh_key(username, ssh_key):
                 flash('Something went wrong when adding that ssh key.')
+                return render_template('signup.tmpl', form=form)
 
             # Success!
             return render_template('success.tmpl')
